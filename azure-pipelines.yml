@@ -1,0 +1,31 @@
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- group: VeracodeIaC
+
+steps:
+- script: |
+    curl -fsS https://tools.veracode.com/veracode-cli/install | sh
+  displayName: 'Configuração inicial'
+
+- task: CmdLine@2
+  inputs:
+    script: './veracode scan --type directory --source ./ --format table'
+  displayName: 'Scan'
+
+- task: CmdLine@2
+  inputs:
+    script: './veracode sbom --type repo --source https://github.com/IGDEXE/cicd-goat --format table'
+  displayName: 'SBOM - Repo'
+
+- task: CmdLine@2
+  inputs:
+    script: |
+      export SRCCLR_SCM_NAME=$(veracodeAppProfile)
+      curl -sSL https://download.sourceclear.com/ci.sh | bash -s – scan --update-advisor --allow-dirty
+  displayName: 'Veracode SCA'
+  continueOnError: true
